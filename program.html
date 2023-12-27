@@ -31,17 +31,19 @@
 		var DEFAULT_COLOR = "white";
 		var DEFAULT_ALPHA = 0.5;
 		var ACTIVE_COLOR = "green";
+		var DEATH_COLOR = "red";
 		var ALIGN_L = "left";
 		var ALIGN_C = "center";
 		var ALIGN_R = "right";
 		var HB_LENGTH = 500;
 		
-		var MIN_DISTANCE_BETWEEN_ROBOTS = 400; //400
-		var MAX_DISTANCE_BETWEEN_ROBOTS = 1200; //1200
-		var MAX_ACTIVE_ROBOTS = 3; //3
+		var MIN_DISTANCE_BETWEEN_ROBOTS = 400;
+		var MAX_DISTANCE_BETWEEN_ROBOTS = 1200;
+		var MAX_ACTIVE_ROBOTS = 3;
 
 		var SPACE_KEYCODE = 32;
 		var LABELS_KEYCODE = 80;
+		var EGG_KEYCODE = 17;
 		
 		var SCREENSHAKE_RADIUS = 16;
 		
@@ -52,7 +54,9 @@
 
 		var deaths = 0;
 		var clicks = 0;
+		var eggClicks = 0;
 		var ccheck = true;
+		var dcheck = true;
 
 		var canvas = document.createElement("canvas");
 		var c = canvas.getContext("2d");
@@ -178,6 +182,8 @@
 				spaceKeyIsPressed = true;
 				if (ccheck === true) {clicks += 1}
 				ccheck = false}
+			if (event.keyCode === EGG_KEYCODE) {
+				eggClicks += 1}
 			if (event.keyCode === LABELS_KEYCODE) {
 				if (lToggle === false) {lToggle = true; console.log("Labels: visible")}
 				else if (lToggle === true) {lToggle = false; console.log("Labels: hidden")}}
@@ -241,9 +247,7 @@
 		screenshake = false;
 		}
 		}
-		//update robots
-		function updateRobots() {
-		// Move and animate robots and check collision with nanonaut.
+		function checkCollision(move) {
 		var nanonautTouchedARobot = false;
 		for (var i=0; i<robotData.length; i++) {
 			if (doesNanonautOverlapRobot(
@@ -257,8 +261,8 @@
 			robotCollisionRectangle.height
 			)) {
 				nanonautTouchedARobot = true;
-				deaths += 1;
 			}
+			if (move) {
 			robotData[i].x -= ROBOT_X_SPEED;
 			if ((gameFrameCounter % ROBOT_ANIMATION_SPEED) === 0) {
 				robotData[i].frameNr = robotData[i].frameNr + 1;
@@ -266,8 +270,17 @@
 					robotData[i].frameNr = 0;
 				}
 			}
+			}
+		return nanonautTouchedARobot
 		}
-		
+		}
+
+		//update robots
+		function updateRobots() {
+		// Move and animate robots and check collision with nanonaut.
+		nanonautTouchedARobot = checkCollision(true)
+		if (nanonautTouchedARobot) {if (dcheck) {deaths += 1}; dcheck = false}
+		else {dcheck = true}
 		// Remove robots that have gone off screen.
 		var robotIndex = 0;
 		while (robotIndex < robotData.length) {
@@ -378,22 +391,23 @@
 		
 		drawText("Frame: " + gameFrameCounter, 5, 40, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
 
-		drawText("Player F: " + nanonautFrameNr, 5, 60, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		drawText("PFrame: " + nanonautFrameNr, 5, 60, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
 
 		drawText("X: " + nanonautX.toFixed(0) + ", Y: " + nanonautY.toFixed(0), 5, 80, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
 
 
-		drawText("Shake: " + shakenCameraY.toFixed(2), 5, 100, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		drawText("Shake R: " + shakenCameraY.toFixed(2), 5, 100, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
 
-		var t = new Date()
-		drawText("t: " + time(), 5, CANVAS_HEIGHT - 10, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		if (eggClicks === 5) {text1 = "I love my clock :)"} else {text1 = time()}
+		drawText(text1, 5, CANVAS_HEIGHT - 10, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
 
-		drawText((deaths / 10).toFixed(0) + " Deaths", CANVAS_WIDTH - 5, CANVAS_HEIGHT - 10, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_R);
+		if (checkCollision(false)){var col1 = DEATH_COLOR} else {var col1 = DEFAULT_COLOR}
+		drawText((deaths).toFixed(0) + " Deaths", CANVAS_WIDTH - 5, CANVAS_HEIGHT - 10, col1, DEFAULT_ALPHA, ALIGN_R);
 
-		drawText((nanonautHealth / NANONAUT_MAX_HEALTH * 100).toFixed(2) + "%", CANVAS_WIDTH - 5, CANVAS_HEIGHT - 30, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_R);
+		drawText((nanonautHealth / NANONAUT_MAX_HEALTH * 100).toFixed(2) + "%", CANVAS_WIDTH - 5, CANVAS_HEIGHT - 30, col1, DEFAULT_ALPHA, ALIGN_R);
 
-		if (spaceKeyIsPressed){var col = ACTIVE_COLOR} else {var col = DEFAULT_COLOR}
-		drawText("Clicks: " + clicks, CANVAS_WIDTH - 5, 20, col, DEFAULT_ALPHA, ALIGN_R);
+		if (spaceKeyIsPressed){var col2 = ACTIVE_COLOR} else {var col2 = DEFAULT_COLOR}
+		drawText("Clicks: " + clicks, CANVAS_WIDTH - 5, 20, col2, DEFAULT_ALPHA, ALIGN_R);
 		}
 
 		if (lToggle) {drawLabels()}
