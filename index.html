@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-      <title>Nanonaut Action</title>
+      <title>Nanonaut Action (MODDED)</title>
 	  <meta charset="UTF-8"> 
 </head>
 <body>
@@ -29,6 +29,7 @@
 		var ROBOT_X_SPEED = 4;
 		
 		var DEFAULT_COLOR = "white";
+		var DEFAULT_FONT = "20px sans-serif";
 		var DEFAULT_ALPHA = 0.5;
 		var ACTIVE_COLOR = "green";
 		var DEATH_COLOR = "red";
@@ -42,6 +43,7 @@
 		var MAX_ACTIVE_ROBOTS = 3;
 
 		var SPACE_KEYCODE = 32;
+		var UP_KEYCODE = 38;
 		var LABELS_KEYCODE = 80;
 		var EGG_KEYCODE = 17;
 		
@@ -57,6 +59,9 @@
 		var eggClicks = 0;
 		var ccheck = true;
 		var dcheck = true;
+		var lastTimestamp = 0;
+		var fpsCounter = 0;
+		var fps = 0;
 
 		var canvas = document.createElement("canvas");
 		var c = canvas.getContext("2d");
@@ -126,14 +131,14 @@
 		var gameFrameCounter = 0;
 		var lToggle = true;
 		var gameMode = PLAY_GAME_MODE; 
-
+		var spaceKeyTimestamps = []
 		var bushData = generateBushes();
 
-		function drawText(text,x,y,color,alpha,align){
+		function drawText(text,x,y,color,alpha,align,font){
 			c.globalAlpha = alpha;
 			c.textAlign = align;
 			c.fillStyle = color;
-			c.font = "20px sans-serif";
+			c.font = font;
 			c.fillText(text, x, y);
 			c.globalAlpha = 1;
 			c.textAlign = "left"
@@ -145,7 +150,7 @@
 		window.addEventListener("load", start);
 
 		function start(){
-				window.requestAnimationFrame(mainLoop);
+			window.requestAnimationFrame(mainLoop);
 		}
 		
 		function generateBushes() {
@@ -168,8 +173,27 @@
 			return generatedBushData;
 		}
 
+		function updateFPS(currentTimestamp) {
+			fpsCounter++;
+			if (currentTimestamp - lastTimestamp >= 100) {
+				fps = ((fpsCounter * 1000) / (currentTimestamp - lastTimestamp)).toFixed(2);
+				fpsCounter = 0;
+				lastTimestamp = currentTimestamp;
+        }
+    }
+		function calculateKeystrokesPerSecond() {
+			var currentTime = Date.now();
+			var oneSecondAgo = currentTime - 1000;  // 1000 ms = 1 second
+
+			spaceKeyTimestamps = spaceKeyTimestamps.filter(function (timestamp) {
+			return timestamp > oneSecondAgo;
+		});
+
+		var cps = spaceKeyTimestamps.length;
+		}
 		//MAIN LOOP
-		function mainLoop(){
+		function mainLoop(timestamp){
+			updateFPS(timestamp)
 			update();
 			draw();
 			window.requestAnimationFrame(mainLoop);
@@ -180,6 +204,12 @@
 			console.log(event.keyCode)
 			if (event.keyCode === SPACE_KEYCODE) {
 				spaceKeyIsPressed = true;
+				spaceKeyTimestamps.push(Date.now());
+				if (ccheck === true) {clicks += 1}
+				ccheck = false}
+			if (event.keyCode === UP_KEYCODE) {
+				spaceKeyIsPressed = true;
+				spaceKeyTimestamps.push(Date.now());
 				if (ccheck === true) {clicks += 1}
 				ccheck = false}
 			if (event.keyCode === EGG_KEYCODE) {
@@ -188,12 +218,14 @@
 				if (lToggle === false) {lToggle = true; console.log("Labels: visible")}
 				else if (lToggle === true) {lToggle = false; console.log("Labels: hidden")}}
 		}
-		
+		setInterval(calculateKeystrokesPerSecond, 100);
 		function onKeyUp(event) {
 			if (event.keyCode === SPACE_KEYCODE) {
 				spaceKeyIsPressed = false;
-				ccheck = true
-			}
+				ccheck = true}
+			if (event.keyCode === UP_KEYCODE) {
+				spaceKeyIsPressed = false;
+				ccheck = true}
 		}
 		
 		//UPDATE
@@ -236,7 +268,7 @@
 			}
 		}
 		screenshake = false;
-		var nanonautTouchedARobot = updateRobots ();
+		var nanonautTouchedARobot = updateRobots();
 		if (nanonautTouchedARobot) {
 			screenshake = true;
 			if (nanonautHealth > 0) nanonautHealth -= 1;
@@ -291,7 +323,7 @@
 			}
 		}
 
-        // Add a new robot if there aren't enough.
+		// Add a new robot if there aren't enough.
 		if (robotData.length < MAX_ACTIVE_ROBOTS) {
 			var lastRobotX = CANVAS_WIDTH;
 			if (robotData.length > 0) {
@@ -328,6 +360,26 @@
 		);
 		return nanonautOverlapsRobotOnXAxis && nanonautOverlapsRobotOnYAxis;
 		}
+
+		//ANTICHEAT
+		function isLegit() {
+		return NANONAUT_WIDTH === 181
+		 && NANONAUT_HEIGHT === 229
+		 && NANONAUT_Y_ACCELERATION === 1
+		 && NANONAUT_X_SPEED === 6.2544897
+		 && NANONAUT_JUMP_SPEED === 17
+		 && NANONAUT_MAX_HEALTH === 123.456789
+		 && GROUND_Y === 550		
+		 && ROBOT_WIDTH === 141
+		 && ROBOT_HEIGHT === 139
+		 && ROBOT_X_SPEED === 4				
+		 && MIN_DISTANCE_BETWEEN_ROBOTS === 400
+		 && MAX_DISTANCE_BETWEEN_ROBOTS === 1200
+		 && MAX_ACTIVE_ROBOTS === 3
+		 && PLAY_GAME_MODE === 0
+		 && GAME_OVER_GAME_MODE === 1
+		}
+
 		//DRAWING
 		function draw(){
 		//screen shake
@@ -386,28 +438,49 @@
 		if (s < 10) {s = "0" + s}
 		return h+":"+m+":"+s
 		}
+
 		function drawLabels() {
-		drawText("Distance: " + (nanonautX / 100).toFixed(2), 5, 20, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		drawText("Distance: " + (nanonautX / 100).toFixed(2), 5, 20, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L, DEFAULT_FONT);
 		
-		drawText("Frame: " + gameFrameCounter, 5, 40, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		drawText("Frame: " + gameFrameCounter, 5, 40, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L, DEFAULT_FONT);
 
-		drawText("PFrame: " + nanonautFrameNr, 5, 60, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		drawText("PFrame: " + nanonautFrameNr, 5, 60, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L, DEFAULT_FONT);
 
-		drawText("X: " + nanonautX.toFixed(0) + ", Y: " + nanonautY.toFixed(0), 5, 80, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		drawText("X: " + nanonautX.toFixed(0) + ", Y: " + nanonautY.toFixed(0), 5, 80, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L, DEFAULT_FONT);
 
+		drawText("Shake R: " + shakenCameraY.toFixed(2), 5, 100, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L, DEFAULT_FONT);
 
-		drawText("Shake R: " + shakenCameraY.toFixed(2), 5, 100, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		drawText("FPS: " + fps, 5, 120, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L, DEFAULT_FONT);
 
-		if (eggClicks === 5) {text1 = "I love my clock :)"} else {text1 = time()}
-		drawText(text1, 5, CANVAS_HEIGHT - 10, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_L);
+		if (eggClicks === 5) {text1 = "I love my clock :)"}
+		else if (eggClicks === 6) {text1 = "wait..."}
+		else if (eggClicks === 7) {text1 = "isn't that"}
+		else if (eggClicks === 8) {text1 = "a GEOMETRY DASH REFERENCE???"}
+		else if (eggClicks === 9) {text1 = "boom, you just"}
+		else if (eggClicks === 10) {text1 = "got Icedcave'd"}
+		else if (eggClicks === 11) {text1 = "Stop pressing control."}
+		else if (eggClicks === 12) {text1 = "I dare you."}
+		else if (eggClicks === 13) {text1 = "What about pressing something different?"}
+		else if (eggClicks === 14) {text1 = "Go touch some grass..."}
+		else if (eggClicks === 15) {text1 = "Ok, so you won't stop?"}
+		else if (eggClicks === 16) {text1 = "Last chance..."}
+		else if (eggClicks === 17) {text1 = "Never gonna give you up, never gonna let you down."}
+		else if (eggClicks === 25) {text1 = "Damn, stop"}
+		else if (eggClicks > 25 && eggClicks < 50) {text1 = "If you get to " + (eggClicks / 10 + 1).toFixed(0) * 10 + ", you're a god. You already pressed CTRL " + eggClicks + " times, isn't that crazy?"}
+		else if (eggClicks === 50) {text1 = "I give up."}
+		else {text1 = time()}
+		drawText(text1, CANVAS_WIDTH - 5, CANVAS_HEIGHT - 10, DEFAULT_COLOR, DEFAULT_ALPHA, ALIGN_R, DEFAULT_FONT);
 
 		if (checkCollision(false)){var col1 = DEATH_COLOR} else {var col1 = DEFAULT_COLOR}
-		drawText((deaths).toFixed(0) + " Deaths", CANVAS_WIDTH - 5, CANVAS_HEIGHT - 10, col1, DEFAULT_ALPHA, ALIGN_R);
+		drawText((deaths).toFixed(0) + " Deaths", CANVAS_WIDTH - 5, 20, col1, DEFAULT_ALPHA, ALIGN_R, DEFAULT_FONT);
 
-		drawText((nanonautHealth / NANONAUT_MAX_HEALTH * 100).toFixed(2) + "%", CANVAS_WIDTH - 5, CANVAS_HEIGHT - 30, col1, DEFAULT_ALPHA, ALIGN_R);
+		drawText((nanonautHealth / NANONAUT_MAX_HEALTH * 100).toFixed(2) + "%", CANVAS_WIDTH - 5, 40, col1, DEFAULT_ALPHA, ALIGN_R, DEFAULT_FONT);
 
 		if (spaceKeyIsPressed){var col2 = ACTIVE_COLOR} else {var col2 = DEFAULT_COLOR}
-		drawText("Clicks: " + clicks, CANVAS_WIDTH - 5, 20, col2, DEFAULT_ALPHA, ALIGN_R);
+		drawText(spaceKeyTimestamps.length + "/" + clicks + " CPS", 5, CANVAS_HEIGHT - 10, col2, DEFAULT_ALPHA, ALIGN_L, DEFAULT_FONT);
+		
+		if (isLegit()){var col3 = ACTIVE_COLOR} else {var col3 = DEATH_COLOR}
+		drawText("·", CANVAS_WIDTH + 5, 90, col3, DEFAULT_ALPHA, ALIGN_R, "100px sans-serif");
 		}
 
 		if (lToggle) {drawLabels()}
@@ -426,7 +499,6 @@
 		c.textAlign = ALIGN_C
 		c.fillStyle = "black";
 		c.font = "96px sans-serif";
-		console.log("game over");
 		c.fillText ("GAME OVER", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
 		c.textAlign = ALIGN_L
 		}
