@@ -204,13 +204,11 @@
 			console.log(event.keyCode)
 			if (event.keyCode === SPACE_KEYCODE) {
 				spaceKeyIsPressed = true;
-				spaceKeyTimestamps.push(Date.now());
-				if (ccheck === true) {clicks += 1}
+				if (ccheck === true) {clicks += 1; spaceKeyTimestamps.push(Date.now())}
 				ccheck = false}
 			if (event.keyCode === UP_KEYCODE) {
 				spaceKeyIsPressed = true;
-				spaceKeyTimestamps.push(Date.now());
-				if (ccheck === true) {clicks += 1}
+				if (ccheck === true) {clicks += 1; spaceKeyTimestamps.push(Date.now())}
 				ccheck = false}
 			if (event.keyCode === EGG_KEYCODE) {
 				eggClicks += 1}
